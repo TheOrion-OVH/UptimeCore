@@ -1,0 +1,27 @@
+{
+  "probes": [
+    {
+      "id": "google_dns",
+      "name": "Google DNS",
+      "type": "ping",
+      "target": "8.8.8.8",
+      "interval": 30,
+      "timeout": 5,
+      "threshold": 100
+    },
+    {
+      "id": "Google Site",
+      "name": "Mon Site Web",
+      "type": "http",
+      "target": "https://google.com",
+      "interval": 60,
+      "timeout": 10,
+      "expected_status": 200
+    }
+  ],
+  "settings": {
+    "history_retention_days": 30,
+    "check_interval": 10,
+    "max_probes": 100
+  }
+}

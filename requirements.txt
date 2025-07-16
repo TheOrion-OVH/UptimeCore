@@ -1,0 +1,4 @@
+Flask==2.3.3
+ping3==4.0.4
+requests==2.31.0
+python-dotenv
