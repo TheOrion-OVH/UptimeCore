@@ -1,0 +1,1251 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UptimeCore Statuspage</title>
+</head>
+<style>
+/* Reset et base */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --bg-primary: #000000;
+    --bg-secondary: #111111;
+    --bg-tertiary: #222222;
+    --text-primary: #ffffff;
+    --text-secondary: #cccccc;
+    --text-muted: #888888;
+    --border: #333333;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --error: #ef4444;
+    --info: #3b82f6;
+    --accent: #8b5cf6;
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+    --shadow-hover: 0 8px 25px -8px rgba(0, 0, 0, 0.3);
+    --border-radius: 0.5rem;
+    --border-radius-lg: 0.75rem;
+    --transition: all 0.3s ease;
+}
+
+[data-theme="light"] {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8fafc;
+    --bg-tertiary: #e2e8f0;
+    --text-primary: #1e293b;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
+    --border: #e2e8f0;
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-hover: 0 8px 25px -8px rgba(0, 0, 0, 0.1);
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.6;
+    transition: var(--transition);
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* Header */
+.header {
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    padding: 1rem 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--accent);
+    text-decoration: none;
+}
+
+.logo::before {
+    content: "📊";
+    font-size: 1.8rem;
+}
+
+.theme-toggle {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    padding: 0.5rem 1rem;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    min-width: 120px;
+    justify-content: center;
+}
+
+.theme-toggle:hover {
+    background: var(--bg-primary);
+    transform: translateY(-1px);
+}
+
+.theme-toggle:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.theme-toggle:active {
+    transform: translateY(0);
+}
+
+/* Global Status */
+.global-status {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--border-radius-lg);
+    padding: 2rem;
+    margin: 2rem 0;
+    text-align: center;
+    box-shadow: var(--shadow);
+    transition: var(--transition);
+}
+
+.global-status.operational {
+    background: rgba(16, 185, 129, 0.1);
+    border-color: var(--success);
+}
+
+.global-status.degraded {
+    background: rgba(245, 158, 11, 0.1);
+    border-color: var(--warning);
+}
+
+.global-status.offline {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: var(--error);
+}
+
+.global-status-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    display: block;
+}
+
+.global-status-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.global-status-subtitle {
+    color: var(--text-muted);
+    font-size: 1rem;
+}
+
+/* Probe List */
+.probe-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.probe-item {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--border-radius-lg);
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+    transition: var(--transition);
+    position: relative;
+}
+
+.probe-item:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+}
+
+.probe-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.probe-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.probe-status-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--success);
+    animation: pulse 2s infinite;
+    flex-shrink: 0;
+}
+
+.probe-status-dot.offline { 
+    background: var(--error); 
+}
+
+.probe-status-dot.slow { 
+    background: var(--warning); 
+}
+
+.probe-status-dot.error { 
+    background: var(--error); 
+}
+
+.probe-status-dot.timeout { 
+    background: var(--warning); 
+}
+
+@keyframes pulse {
+    0%, 100% { 
+        opacity: 1; 
+        transform: scale(1);
+    }
+    50% { 
+        opacity: 0.7; 
+        transform: scale(1.05);
+    }
+}
+
+.probe-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.probe-name {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+    word-break: break-word;
+}
+
+.probe-target {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    word-break: break-all;
+}
+
+.probe-metrics {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.metric {
+    text-align: center;
+    min-width: 60px;
+}
+
+.metric-value {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: block;
+}
+
+.metric-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-top: 0.25rem;
+    display: block;
+}
+
+.probe-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.history-btn {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    padding: 0.5rem 1rem;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: var(--transition);
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
+
+.history-btn:hover {
+    background: var(--accent);
+    color: white;
+    transform: translateY(-1px);
+}
+
+.history-btn:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.history-btn:active {
+    transform: translateY(0);
+}
+
+/* History Chart */
+.history-chart {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+}
+
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.chart-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.chart-period {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.chart-container {
+    height: 40px;
+    display: flex;
+    align-items: end;
+    gap: 1px;
+    background: var(--bg-tertiary);
+    border-radius: 0.25rem;
+    padding: 2px;
+    overflow: hidden;
+}
+
+.chart-bar {
+    flex: 1;
+    height: 100%;
+    min-height: 2px;
+    border-radius: 1px;
+    background: var(--success);
+    transition: var(--transition);
+    cursor: pointer;
+    position: relative;
+}
+
+.chart-bar.offline { 
+    background: var(--error); 
+}
+
+.chart-bar.slow { 
+    background: var(--warning); 
+}
+
+.chart-bar.error { 
+    background: var(--error); 
+}
+
+.chart-bar.timeout { 
+    background: var(--warning); 
+}
+
+.chart-bar.no-data { 
+    background: var(--text-muted); 
+    opacity: 0.3; 
+}
+
+.chart-bar:hover {
+    transform: scaleY(1.1);
+    z-index: 1;
+}
+
+.chart-tooltip {
+    position: absolute;
+    bottom: calc(100% + 5px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    z-index: 10;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+}
+
+.chart-bar:hover .chart-tooltip {
+    opacity: 1;
+}
+
+/* Modal */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(5px);
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--border-radius-lg);
+    padding: 2rem;
+    max-width: 800px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: var(--shadow-hover);
+    animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.modal-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--text-muted);
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    transition: var(--transition);
+    line-height: 1;
+}
+
+.modal-close:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.modal-close:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.history-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.timeline-item {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: var(--border-radius);
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: var(--transition);
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.timeline-item:hover {
+    background: var(--bg-primary);
+}
+
+.timeline-time {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    font-family: 'Monaco', 'Menlo', monospace;
+}
+
+.timeline-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.timeline-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--success);
+    flex-shrink: 0;
+}
+
+.timeline-dot.offline { 
+    background: var(--error); 
+}
+
+.timeline-dot.slow { 
+    background: var(--warning); 
+}
+
+.timeline-dot.error { 
+    background: var(--error); 
+}
+
+.timeline-dot.timeout { 
+    background: var(--warning); 
+}
+
+/* Loading States */
+.loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 200px;
+    color: var(--text-muted);
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border);
+    border-top: 3px solid var(--accent);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .container {
+        padding: 0 15px;
+    }
+    
+    .header-content {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .logo {
+        justify-content: center;
+    }
+    
+    .probe-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .probe-info {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .probe-metrics {
+        gap: 1rem;
+        justify-content: flex-start;
+    }
+    
+    .metric {
+        min-width: 50px;
+    }
+    
+    .metric-value {
+        font-size: 1rem;
+    }
+    
+    .modal-content {
+        width: 95%;
+        padding: 1rem;
+        max-height: 90vh;
+    }
+    
+    .modal-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .timeline-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .chart-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 480px) {
+    .global-status {
+        padding: 1.5rem;
+    }
+    
+    .probe-item {
+        padding: 1rem;
+    }
+    
+    .probe-metrics {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .metric {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        text-align: left;
+    }
+    
+    .metric-label {
+        margin-top: 0;
+    }
+}
+
+/* Préférence de mouvement réduit */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+    
+    .probe-status-dot {
+        animation: none;
+    }
+    
+    .spinner {
+        animation: none;
+        border: 3px solid var(--border);
+        border-top: 3px solid var(--accent);
+    }
+}
+</style>
+<body data-theme="dark">
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    UptimeCore
+                </div>
+                <button class="theme-toggle" onclick="toggleTheme()">
+                    <span id="theme-icon">🌙</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="main">
+        <div class="container">
+            <!-- Global Status -->
+            <div id="global-status" class="global-status operational">
+                <div class="global-status-icon">✅</div>
+                <div class="global-status-title">Tous les systèmes sont opérationnels</div>
+                <div class="global-status-subtitle">Toutes les sondes fonctionnent correctement</div>
+            </div>
+
+            <!-- Probe List -->
+            <div id="probe-list" class="probe-list">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    Chargement des sondes...
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- History Modal -->
+    <div id="history-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Historique - <span id="modal-probe-name"></span></h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div id="modal-history-content">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    Chargement de l'historique...
+                </div>
+            </div>
+        </div>
+    </div>
+<script>
+// Configuration
+const API_BASE = '/api'; // Toutes les routes passent par le proxy sur le port 8080
+let currentProbes = [];
+let probeHistoryData = {};
+let refreshInterval;
+
+// Theme Management
+function toggleTheme() {
+    const body = document.body;
+    const themeIcon = document.getElementById('theme-icon');
+    
+    if (body.getAttribute('data-theme') === 'dark') {
+        body.setAttribute('data-theme', 'light');
+        themeIcon.textContent = '☀️';
+        window.themePreference = 'light';
+    } else {
+        body.setAttribute('data-theme', 'dark');
+        themeIcon.textContent = '🌙';
+        window.themePreference = 'dark';
+    }
+}
+
+function initTheme() {
+    const savedTheme = window.themePreference || 'dark';
+    document.body.setAttribute('data-theme', savedTheme);
+    
+    const themeIcon = document.getElementById('theme-icon');
+    if (themeIcon) {
+        themeIcon.textContent = savedTheme === 'light' ? '☀️' : '🌙';
+    }
+}
+
+// API Functions simplifiées
+async function fetchAPI(endpoint, options = {}) {
+    try {
+        const headers = {
+            'Content-Type': 'application/json',
+            ...options.headers
+        };
+        
+        const response = await fetch(`${API_BASE}${endpoint}`, {
+            ...options,
+            headers,
+            credentials: 'same-origin'
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        return await response.json();
+    } catch (error) {
+        console.error('API Error:', error);
+        throw error;
+    }
+}
+
+// Load probe history for all probes
+async function loadAllProbesHistory() {
+    try {
+        console.log('Loading history for all probes...');
+        const historyPromises = currentProbes.map(async probe => {
+            try {
+                const data = await fetchAPI(`/history/${probe.id}`);
+                console.log(`History loaded for probe ${probe.id}:`, data);
+                return {
+                    probeId: probe.id,
+                    history: Array.isArray(data.history) ? data.history : []
+                };
+            } catch (error) {
+                console.warn(`Failed to load history for probe ${probe.id}:`, error);
+                return {
+                    probeId: probe.id,
+                    history: []
+                };
+            }
+        });
+
+        const results = await Promise.all(historyPromises);
+        
+        // Store history data
+        probeHistoryData = {};
+        results.forEach(result => {
+            probeHistoryData[result.probeId] = result.history;
+            console.log(`Stored ${result.history.length} history entries for probe ${result.probeId}`);
+        });
+
+        // Re-render dashboard with real history
+        renderDashboard(currentProbes);
+        
+    } catch (error) {
+        console.error('Failed to load probe histories:', error);
+    }
+}
+
+// Load Dashboard
+async function loadDashboard() {
+    try {
+        console.log('Loading dashboard...');
+        const data = await fetchAPI('/status');
+        console.log('Dashboard data received:', data);
+        
+        const probes = Object.values(data.probes || {});
+        currentProbes = probes;
+        
+        // Load history for all probes
+        await loadAllProbesHistory();
+        
+        updateGlobalStatus(probes);
+        
+    } catch (error) {
+        console.error('Dashboard loading error:', error);
+        renderError('probe-list', 'Erreur lors du chargement du dashboard');
+    }
+}
+
+// Update Global Status
+function updateGlobalStatus(probes) {
+    const statusEl = document.getElementById('global-status');
+    if (!statusEl) return;
+    
+    const offlineCount = probes.filter(p => p.status === 'offline' || p.status === 'error').length;
+    const slowCount = probes.filter(p => p.status === 'slow' || p.status === 'timeout').length;
+    
+    if (offlineCount === probes.length && probes.length > 0) {
+        statusEl.className = 'global-status offline';
+        statusEl.innerHTML = `
+            <div class="global-status-icon">🔴</div>
+            <div class="global-status-title">Tous les services sont hors ligne</div>
+            <div class="global-status-subtitle">Incident majeur en cours</div>
+        `;
+    } else if (offlineCount > 0 || slowCount > 0) {
+        statusEl.className = 'global-status degraded';
+        statusEl.innerHTML = `
+            <div class="global-status-icon">🟡</div>
+            <div class="global-status-title">Une partie des services est dégradée</div>
+            <div class="global-status-subtitle">${offlineCount} service(s) hors ligne, ${slowCount} service(s) lent(s)</div>
+        `;
+    } else {
+        statusEl.className = 'global-status operational';
+        statusEl.innerHTML = `
+            <div class="global-status-icon">✅</div>
+            <div class="global-status-title">Tous les systèmes sont opérationnels</div>
+            <div class="global-status-subtitle">Toutes les sondes fonctionnent correctement</div>
+        `;
+    }
+}
+
+// Render Dashboard
+function renderDashboard(probes) {
+    const container = document.getElementById('probe-list');
+    if (!container) return;
+    
+    if (probes.length === 0) {
+        container.innerHTML = `
+            <div class="loading">
+                <h3>Aucune sonde configurée</h3>
+                <p>Ajoutez des sondes dans config.json</p>
+            </div>
+        `;
+        return;
+    }
+
+    const probeItems = probes.map(probe => `
+        <div class="probe-item">
+            <div class="probe-header">
+                <div class="probe-info">
+                    <div class="probe-status-dot ${probe.status}"></div>
+                    <div class="probe-details">
+                        <div class="probe-name">${escapeHtml(probe.name)}</div>
+                        <div class="probe-target">${escapeHtml(probe.target)}</div>
+                    </div>
+                </div>
+                <div class="probe-metrics">
+                    ${probe.response_time ? `
+                        <div class="metric">
+                            <div class="metric-value">${probe.response_time}ms</div>
+                            <div class="metric-label">Temps de réponse</div>
+                        </div>
+                    ` : ''}
+                    ${probe.http_status ? `
+                        <div class="metric">
+                            <div class="metric-value">${probe.http_status}</div>
+                            <div class="metric-label">Code HTTP</div>
+                        </div>
+                    ` : ''}
+                    <div class="metric">
+                        <div class="metric-value">${getStatusText(probe.status)}</div>
+                        <div class="metric-label">Statut</div>
+                    </div>
+                </div>
+                <div class="probe-actions">
+                    <button class="history-btn" onclick="showHistory('${probe.id}')">
+                        📊 Historique
+                    </button>
+                </div>
+            </div>
+            
+            <div class="history-chart">
+                <div class="chart-header">
+                    <div class="chart-title">Historique des dernières 24h</div>
+                    <div class="chart-period">(${getHistoryPeriodText(probe.id)})</div>
+                </div>
+                <div class="chart-container">
+                    ${generateChartBars(probe.id)}
+                </div>
+            </div>
+            
+            ${probe.error ? `
+                <div style="margin-top: 1rem; padding: 0.75rem; background: rgba(239, 68, 68, 0.1); border-radius: 0.5rem; color: var(--error); font-size: 0.9rem; border: 1px solid var(--error);">
+                    <strong>Erreur:</strong> ${escapeHtml(probe.error)}
+                </div>
+            ` : ''}
+        </div>
+    `).join('');
+
+    container.innerHTML = probeItems;
+}
+
+// Get history period text
+function getHistoryPeriodText(probeId) {
+    const history = probeHistoryData[probeId] || [];
+    if (history.length === 0) {
+        return 'Aucune donnée disponible';
+    }
+    
+    const firstEntry = history[0];
+    const lastEntry = history[history.length - 1];
+    
+    if (firstEntry && lastEntry) {
+        const firstTime = new Date(firstEntry.timestamp);
+        const lastTime = new Date(lastEntry.timestamp);
+        const diffHours = Math.round((lastTime - firstTime) / (1000 * 60 * 60));
+        
+        if (diffHours < 1) {
+            return `Dernière heure`;
+        } else if (diffHours < 24) {
+            return `Dernières ${diffHours}h`;
+        } else {
+            return `Derniers ${Math.round(diffHours / 24)} jours`;
+        }
+    }
+    
+    return `${history.length} vérifications`;
+}
+
+// Generate Chart Bars with real data
+function generateChartBars(probeId) {
+    const history = probeHistoryData[probeId] || [];
+    
+    console.log(`Generating chart for probe ${probeId}, history length: ${history.length}`);
+    
+    if (history.length === 0) {
+        return Array(100).fill(0).map((_, index) => `
+            <div class="chart-bar no-data" title="Aucune donnée disponible">
+                <div class="chart-tooltip">
+                    Aucune donnée disponible
+                </div>
+            </div>
+        `).join('');
+    }
+
+    const maxBars = 100;
+    let displayData = [];
+    
+    if (history.length >= maxBars) {
+        displayData = history.slice(-maxBars);
+    } else {
+        const emptyEntries = Array(maxBars - history.length).fill(null);
+        displayData = [...emptyEntries, ...history];
+    }
+    
+    return displayData.map((entry, index) => {
+        if (!entry) {
+            return `
+                <div class="chart-bar no-data" title="Aucune donnée">
+                    <div class="chart-tooltip">
+                        Aucune donnée disponible
+                    </div>
+                </div>
+            `;
+        }
+        
+        const time = new Date(entry.timestamp).toLocaleTimeString('fr-FR', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            second: '2-digit'
+        });
+        
+        const statusClass = entry.status || 'no-data';
+        const statusText = getStatusText(entry.status || 'no-data');
+        const responseTime = entry.response_time ? `${entry.response_time}ms` : 'N/A';
+        const httpStatus = entry.http_status ? `HTTP ${entry.http_status}` : '';
+        
+        return `
+            <div class="chart-bar ${statusClass}" title="${time} - ${statusText}">
+                <div class="chart-tooltip">
+                    ${time}<br>
+                    ${statusText}<br>
+                    ${responseTime}
+                    ${httpStatus ? `<br>${httpStatus}` : ''}
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// Show History Modal
+async function showHistory(probeId) {
+    const probe = currentProbes.find(p => p.id === probeId);
+    if (!probe) {
+        console.error('Probe not found:', probeId);
+        return;
+    }
+    
+    const modal = document.getElementById('history-modal');
+    const modalProbeName = document.getElementById('modal-probe-name');
+    const modalContent = document.getElementById('modal-history-content');
+    
+    if (!modal || !modalProbeName || !modalContent) {
+        console.error('Modal elements not found');
+        return;
+    }
+    
+    modalProbeName.textContent = probe.name;
+    modalContent.innerHTML = `
+        <div class="loading">
+            <div class="spinner"></div>
+            Chargement de l'historique...
+        </div>
+    `;
+    
+    modal.classList.add('active');
+    
+    try {
+        console.log(`Loading detailed history for probe ${probeId}...`);
+        const data = await fetchAPI(`/history/${probeId}`);
+        console.log('Detailed history received:', data);
+        
+        const history = Array.isArray(data.history) ? data.history : [];
+        
+        // Update cached data
+        probeHistoryData[probeId] = history;
+        
+        renderHistoryModal(history);
+    } catch (error) {
+        console.error('Failed to load detailed history:', error);
+        const cachedHistory = probeHistoryData[probeId] || [];
+        console.log('Using cached history:', cachedHistory.length, 'entries');
+        renderHistoryModal(cachedHistory);
+    }
+}
+
+// Render History Modal
+function renderHistoryModal(history) {
+    const container = document.getElementById('modal-history-content');
+    if (!container) return;
+    
+    console.log('Rendering history modal with', history.length, 'entries');
+    
+    if (history.length === 0) {
+        container.innerHTML = `
+            <div class="loading">
+                <h3>Aucune donnée d'historique</h3>
+                <p>Aucune donnée disponible pour cette sonde</p>
+            </div>
+        `;
+        return;
+    }
+
+    const recentHistory = history.slice(-50).reverse();
+    
+    const timeline = recentHistory.map(item => {
+        const timestamp = formatTimestamp(item.timestamp);
+        const statusText = getStatusText(item.status);
+        const responseTime = item.response_time ? `${item.response_time}ms` : null;
+        const httpStatus = item.http_status ? `HTTP ${item.http_status}` : null;
+        
+        return `
+            <div class="timeline-item">
+                <div class="timeline-time">${timestamp}</div>
+                <div class="timeline-status">
+                    <div class="timeline-dot ${item.status}"></div>
+                    <span>${statusText}</span>
+                    ${responseTime ? `<span style="margin-left: 1rem; color: var(--text-muted);">${responseTime}</span>` : ''}
+                    ${httpStatus ? `<span style="margin-left: 1rem; color: var(--text-muted);">${httpStatus}</span>` : ''}
+                </div>
+                ${item.error ? `<div class="timeline-error">${escapeHtml(item.error)}</div>` : ''}
+            </div>
+        `;
+    }).join('');
+
+    container.innerHTML = `
+        <div class="history-summary">
+            <p>Affichage des ${recentHistory.length} dernières vérifications sur ${history.length} au total</p>
+        </div>
+        <div class="history-timeline">${timeline}</div>
+    `;
+}
+
+// Close Modal
+function closeModal() {
+    const modal = document.getElementById('history-modal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+}
+
+// Helper Functions
+function getStatusText(status) {
+    const statusMap = {
+        'online': 'En ligne',
+        'offline': 'Hors ligne',
+        'slow': 'Lent',
+        'error': 'Erreur',
+        'timeout': 'Timeout',
+        'no-data': 'Aucune donnée'
+    };
+    return statusMap[status] || status;
+}
+
+function formatTimestamp(timestamp) {
+    if (!timestamp) return 'N/A';
+    
+    const date = new Date(timestamp);
+    if (isNaN(date.getTime())) return 'Date invalide';
+    
+    return date.toLocaleString('fr-FR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    });
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function renderError(containerId, message) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    container.innerHTML = `
+        <div class="loading">
+            <h3>Erreur</h3>
+            <p>${message}</p>
+        </div>
+    `;
+}
+
+// Auto-refresh
+function startAutoRefresh() {
+    refreshInterval = setInterval(() => {
+        console.log('Auto-refreshing dashboard...');
+        loadDashboard();
+    }, 30000); // Refresh every 30 seconds
+}
+
+function stopAutoRefresh() {
+    if (refreshInterval) {
+        clearInterval(refreshInterval);
+        refreshInterval = null;
+    }
+}
+
+// Event Listeners
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log('DOM Content Loaded');
+    initTheme();
+    
+    // Chargement direct du dashboard
+    await loadDashboard();
+    startAutoRefresh();
+    
+    // Setup modal event listeners
+    const modal = document.getElementById('history-modal');
+    if (modal) {
+        modal.addEventListener('click', (e) => {
+            if (e.target.id === 'history-modal') {
+                closeModal();
+            }
+        });
+    }
+    
+    // Close modal on escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeModal();
+        }
+    });
+});
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', () => {
+    stopAutoRefresh();
+});
+</script>
+</body>
+</html> 
